@@ -27,7 +27,7 @@ async def index(request: Request):
     cur.execute(sql)
     for row in cur.fetchall():
         username = row[0]
-    
+
     # create response
     return templates.TemplateResponse(
         request=request,
