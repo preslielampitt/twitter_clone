@@ -29,8 +29,8 @@ cur.execute(sql)     # cur.execute() actually runs the SQL code
 con.commit()         # "commit" means "save" in SQL terminology; not always required, but never wrong
 
 # insert some dummy data
-cur.execute("insert into users (username, password, age) values ('Trump', 'Trump', 78);")
-cur.execute('insert into users (username, password, age) values (\'Biden\', \'Biden\', 81);')
+cur.execute('''insert into users (username, password, age) values ('Trump', 'Trump', 78);''')
+cur.execute('''insert into users (username, password, age) values (\'Biden\', \'Biden\', 81);''')
 cur.execute('''insert into users (username, password, age) values ('Evan', 'correct horse battery staple', 7);''')
 cur.execute('''insert into users (username, password, age) values ('Isaac', 'soccer', 4);''')
 cur.execute('''insert into users (username, password, age) values ('Aaron', 'guaguagua', 3);''')
