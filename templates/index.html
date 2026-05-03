@@ -3,5 +3,14 @@
 {% block content %}
 <h2>Main Page</h2>
 
-<p>username: {{username}}</p>
+<img class="hero-image" src="/static/message_bubble.png" alt="Message Bubble">
+
+{% for message in messages %}
+<div class="message">
+    <p class="message-text">{{ message.text }}</p>
+    <p class="message-info">Created at: {{ message.timestamp }}</p>
+    <p class="message-info">Username: {{ message.username }}</p>
+    <p class="message-info">Age: {{ message.age }}</p>
+</div>
+{% endfor %}
 {% endblock %}
