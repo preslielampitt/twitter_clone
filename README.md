@@ -2,13 +2,33 @@
 
 Twitter Clone functions similarly to Twitter (now X). The home page displays messages, beginning with the newest, from different users with its timestamp, author, and the author's age.
 
-## Routes
+## How to Run
 
-- `/` shows the message feed.
-- `/login` shows the login page.
-- `/logout` shows the logout page.
-- `/create_message` shows the create message page.
-- `/create_user` shows the create user page.
+Set up the virtual environment and install the packages:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn jinja2
+```
+
+Create the database:
+
+```bash
+python3 db_create.py
+```
+
+Start the server:
+
+```bash
+python3 main.py
+```
+
+Open the app in a browser:
+
+```bash
+http://127.0.0.1:8080
+```
 
 ## Home Page Screenshot
 
