@@ -1,6 +1,6 @@
 # Twitter Clone
 
-Twitter Clone is a small FastAPI web app for viewing short messages from different users. The home page loads messages from a SQLite database and displays each post with its timestamp, author, and the author's age, with the newest messages shown first.
+Twitter Clone functions similarly to Twitter (now X). The home page displays messages, beginning with the newest, from different users with its timestamp, author, and the author's age.
 
 ## Routes
 
