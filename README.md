@@ -9,7 +9,7 @@ Set up the virtual environment and install the packages:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install fastapi uvicorn jinja2
+pip install -r requirements.txt
 ```
 
 Create the database:
