@@ -3,7 +3,7 @@ Starts a hello world webserver.
 '''
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -15,56 +15,117 @@ templates = Jinja2Templates(directory='templates')
 
 def check_credentials(request: Request):
     '''
-    return username if user is logged in
-    if not logged in return None
+    Return username if user is logged in.
+    If not logged in, return None.
     '''
-    query_username = request.query_params.get('username')
-    query_password = request.query_params.get('password')
-    print('query_username=', query_username)
-    print('query_password=', query_password)
-
     cookie_username = request.cookies.get('username')
     cookie_password = request.cookies.get('password')
-    print('cookie_username=', cookie_username)
-    print('cookie_password=', cookie_password)
 
-    username = cookie_username
-    password = cookie_password
+    if cookie_username is None or cookie_password is None:
+        return None
 
-    # should connect to the db
-    # and check if username/password in the users table
-    if username == 'Trump' and password == '12345':
-        print(f'logged in as {username}')
-        return True
-    else:
-        print('not logged in')
-        return False
+    con = sqlite3.connect('twitter_clone.db')
+    cur = con.cursor()
+    sql = """
+    SELECT username
+    FROM users
+    WHERE username = ? AND password = ?;
+    """
+    cur.execute(sql, (cookie_username, cookie_password))
+    row = cur.fetchone()
+    con.close()
+
+    if row is None:
+        return None
+    return row[0]
+
+def get_user_id(username):
+    con = sqlite3.connect('twitter_clone.db')
+    cur = con.cursor()
+    sql = """
+    SELECT id
+    FROM users
+    WHERE username = ?;
+    """
+    cur.execute(sql, (username,))
+    row = cur.fetchone()
+    con.close()
+
+    if row is None:
+        return None
+    return row[0]
 
 @app.get('/', response_class=HTMLResponse)
 async def index(request: Request):
+    username = check_credentials(request)
+    messages = []
+
+    con = sqlite3.connect('twitter_clone.db')
+    cur = con.cursor()
+    sql = """
+    SELECT messages.message, messages.created_at, users.username, users.age
+    FROM messages
+    JOIN users ON messages.sender_id = users.id
+    ORDER BY messages.created_at DESC;
+    """
+    cur.execute(sql)
+    for row in cur.fetchall():
+        message = {
+            'text': row[0],
+            'timestamp': row[1],
+            'username': row[2],
+            'age': row[3],
+        }
+        messages.append(message)
+    con.close()
+
     # create response
     return templates.TemplateResponse(
         request=request,
         name='index.html',
         context={
-            'is_logged_in': check_credentials(request),
-            'username': check_credentials(request),
+            'is_logged_in': username is not None,
+            'username': username,
+            'messages': messages,
         },
     )
 
 @app.get('/login', response_class=HTMLResponse)
 async def login(request: Request):
-    response = templates.TemplateResponse(
+    username = request.query_params.get('username')
+    password = request.query_params.get('password')
+    error = None
+
+    if username is not None and password is not None:
+        con = sqlite3.connect('twitter_clone.db')
+        cur = con.cursor()
+        sql = """
+        SELECT id
+        FROM users
+        WHERE username = ? AND password = ?;
+        """
+        cur.execute(sql, (username, password))
+        row = cur.fetchone()
+        con.close()
+
+        if row is not None:
+            response = RedirectResponse(url='/', status_code=302)
+            response.set_cookie(key='username', value=username)
+            response.set_cookie(key='password', value=password)
+            return response
+
+        error = 'Incorrect username or password.'
+
+    current_username = check_credentials(request)
+    return templates.TemplateResponse(
         request=request,
         name='login.html',
         context={
-            'is_logged_in': check_credentials(request),
-            'username': check_credentials(request),
+            'is_logged_in': current_username is not None,
+            'username': current_username,
+            'error': error,
         },
     )
-    response.set_cookie(key='username', value=request.query_params.get('username'))
-    response.set_cookie(key='password', value=request.query_params.get('password'))
-    return response
 
 @app.get('/logout', response_class=HTMLResponse)
 async def logout(request: Request):
@@ -72,8 +133,8 @@ async def logout(request: Request):
         request=request,
         name='logout.html',
         context={
-            'is_logged_in': check_credentials(request),
-            'username': check_credentials(request),
+            'is_logged_in': False,
+            'username': None,
         },
     )
     response.delete_cookie(key='username')
@@ -82,23 +143,81 @@ async def logout(request: Request):
 
 @app.get('/create_message', response_class=HTMLResponse)
 async def create_message(request: Request):
+    username = check_credentials(request)
+    if username is None:
+        return RedirectResponse(url='/login', status_code=302)
+
+    message_text = request.query_params.get('message')
+    error = None
+
+    if message_text is not None:
+        if message_text == '':
+            error = 'Message cannot be blank.'
+        else:
+            user_id = get_user_id(username)
+            con = sqlite3.connect('twitter_clone.db')
+            cur = con.cursor()
+            sql = """
+            INSERT INTO messages (sender_id, message)
+            VALUES (?, ?);
+            """
+            cur.execute(sql, (user_id, message_text))
+            con.commit()
+            con.close()
+            return RedirectResponse(url='/', status_code=302)
+
     return templates.TemplateResponse(
         request=request,
         name='create_message.html',
         context={
-            'is_logged_in': check_credentials(request),
-            'username': check_credentials(request),
+            'is_logged_in': True,
+            'username': username,
+            'error': error,
         },
     )
 
 @app.get('/create_user', response_class=HTMLResponse)
 async def create_user(request: Request):
+    current_username = check_credentials(request)
+    if current_username is not None:
+        return RedirectResponse(url='/', status_code=302)
+
+    username = request.query_params.get('username')
+    password = request.query_params.get('password')
+    password_again = request.query_params.get('password_again')
+    age = request.query_params.get('age')
+    error = None
+
+    if username is not None and password is not None and password_again is not None:
+        if password != password_again:
+            error = 'Passwords do not match.'
+        else:
+            con = sqlite3.connect('twitter_clone.db')
+            try:
+                cur = con.cursor()
+                sql = """
+                INSERT INTO users (username, password, age)
+                VALUES (?, ?, ?);
+                """
+                cur.execute(sql, (username, password, age))
+                con.commit()
+
+                response = RedirectResponse(url='/', status_code=302)
+                response.set_cookie(key='username', value=username)
+                response.set_cookie(key='password', value=password)
+                return response
+            except sqlite3.IntegrityError:
+                error = 'That username already exists.'
+            finally:
+                con.close()
+
     return templates.TemplateResponse(
         request=request,
         name='create_user.html',
         context={
-            'is_logged_in': check_credentials(request),
-            'username': check_credentials(request),
+            'is_logged_in': False,
+            'username': None,
+            'error': error,
         },
     )
 

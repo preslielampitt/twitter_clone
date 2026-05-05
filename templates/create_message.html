@@ -2,4 +2,17 @@
 
 {% block content %}
 <h2>Create Message Page</h2>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<form>
+    <p>
+        <textarea name="message" rows="5" cols="60"></textarea>
+    </p>
+    <p>
+        <input type="submit" value="Create Message">
+    </p>
+</form>
 {% endblock %}

@@ -2,4 +2,18 @@
 
 {% block content %}
 <h2>Create User Page</h2>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<form>
+    <table>
+        <tr><td>username: </td><td><input name="username"></td></tr>
+        <tr><td>password: </td><td><input type="password" name="password"></td></tr>
+        <tr><td>password again: </td><td><input type="password" name="password_again"></td></tr>
+        <tr><td>age: </td><td><input type="number" name="age"></td></tr>
+        <tr><td></td><td><input type="submit" value="Create Account"></td></tr>
+    </table>
+</form>
 {% endblock %}
