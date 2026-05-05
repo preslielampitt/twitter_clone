@@ -13,85 +13,92 @@ app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
 templates = Jinja2Templates(directory='templates')
 
-# Internal Server Error:
-# always means a python error inside of the function that corresponds to the route
-# or "page" that you were connecting to in firefox
+def check_credentials(request: Request):
+    '''
+    return username if user is logged in
+    if not logged in return None
+    '''
+    query_username = request.query_params.get('username')
+    query_password = request.query_params.get('password')
+    print('query_username=', query_username)
+    print('query_password=', query_password)
+
+    cookie_username = request.cookies.get('username')
+    cookie_password = request.cookies.get('password')
+    print('cookie_username=', cookie_username)
+    print('cookie_password=', cookie_password)
+
+    username = cookie_username
+    password = cookie_password
+
+    # should connect to the db
+    # and check if username/password in the users table
+    if username == 'Trump' and password == '12345':
+        print(f'logged in as {username}')
+        return True
+    else:
+        print('not logged in')
+        return False
+
 @app.get('/', response_class=HTMLResponse)
 async def index(request: Request):
-    is_logged_in = True
-
-    messages = []
-
-    con = sqlite3.connect('twitter_clone.db')
-    cur = con.cursor()
-    sql = """
-    SELECT messages.message, messages.created_at, users.username, users.age
-    FROM messages
-    JOIN users ON messages.sender_id = users.id
-    ORDER BY messages.created_at DESC;
-    """
-    cur.execute(sql)
-    for row in cur.fetchall():
-        message = {
-            'text': row[0],
-            'timestamp': row[1],
-            'username': row[2],
-            'age': row[3],
-        }
-        messages.append(message)
-    con.close()
-
     # create response
     return templates.TemplateResponse(
         request=request,
         name='index.html',
         context={
-            'is_logged_in': is_logged_in,
-            'messages': messages,
+            'is_logged_in': check_credentials(request),
+            'username': check_credentials(request),
         },
     )
 
 @app.get('/login', response_class=HTMLResponse)
 async def login(request: Request):
-    is_logged_in='True'
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request=request,
         name='login.html',
         context={
-            'is_logged_in': is_logged_in
+            'is_logged_in': check_credentials(request),
+            'username': check_credentials(request),
         },
     )
+    response.set_cookie(key='username', value=request.query_params.get('username'))
+    response.set_cookie(key='password', value=request.query_params.get('password'))
+    return response
 
 @app.get('/logout', response_class=HTMLResponse)
 async def logout(request: Request):
-    is_logged_in='False'
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request=request,
         name='logout.html',
         context={
-            'is_logged_in': is_logged_in
+            'is_logged_in': check_credentials(request),
+            'username': check_credentials(request),
         },
     )
+    response.delete_cookie(key='username')
+    response.delete_cookie(key='password')
+    return response
 
 @app.get('/create_message', response_class=HTMLResponse)
 async def create_message(request: Request):
-    is_logged_in='True'
     return templates.TemplateResponse(
         request=request,
         name='create_message.html',
         context={
-            'is_logged_in': is_logged_in
+            'is_logged_in': check_credentials(request),
+            'username': check_credentials(request),
         },
     )
 
 @app.get('/create_user', response_class=HTMLResponse)
 async def create_user(request: Request):
-    is_logged_in='True'
     return templates.TemplateResponse(
         request=request,
         name='create_user.html',
         context={
-            'is_logged_in': is_logged_in
+            'is_logged_in': check_credentials(request),
+            'username': check_credentials(request),
         },
     )
 
