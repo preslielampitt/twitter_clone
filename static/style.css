@@ -104,6 +104,12 @@ img {
     max-width: 100%;
 }
 
+.avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+}
+
 @media (max-width: 700px) {
     main {
         margin: 24px 16px;

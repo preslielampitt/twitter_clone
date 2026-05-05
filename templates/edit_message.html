@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Edit Message Page</h2>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<form>
+    <input type="hidden" name="id" value="{{ message_id }}">
+
+    <p>
+        <textarea name="message" rows="5" cols="60">{{ message_text }}</textarea>
+    </p>
+
+    <p>
+        <input type="submit" value="Save Changes">
+    </p>
+</form>
+{% endblock %}
