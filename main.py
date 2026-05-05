@@ -18,6 +18,84 @@ templates = Jinja2Templates(directory='templates')
 MESSAGES_PER_PAGE = 50
 PROFILE_MESSAGE_LIMIT = 10
 
+TRANSLATIONS = {
+    'en': {
+        'home': 'Home',
+        'create_message': 'Create Message',
+        'my_profile': 'My Profile',
+        'change_password': 'Change Password',
+        'logout': 'Logout',
+        'delete_account': 'Delete Account',
+        'create_user': 'Create User',
+        'login': 'Login',
+        'main_page': 'Main Page',
+        'created_at': 'Created at',
+        'username': 'Username',
+        'age': 'Age',
+        'edited_at': 'Edited at',
+        'edit': 'Edit',
+        'delete': 'Delete',
+        'reply': 'Reply',
+        'previous': 'Previous',
+        'next': 'Next',
+        'language': 'Language',
+    },
+    'es': {
+        'home': 'Inicio',
+        'create_message': 'Crear Mensaje',
+        'my_profile': 'Mi Perfil',
+        'change_password': 'Cambiar Contrasena',
+        'logout': 'Cerrar Sesion',
+        'delete_account': 'Borrar Cuenta',
+        'create_user': 'Crear Usuario',
+        'login': 'Iniciar Sesion',
+        'main_page': 'Pagina Principal',
+        'created_at': 'Creado',
+        'username': 'Usuario',
+        'age': 'Edad',
+        'edited_at': 'Editado',
+        'edit': 'Editar',
+        'delete': 'Borrar',
+        'reply': 'Responder',
+        'previous': 'Anterior',
+        'next': 'Siguiente',
+        'language': 'Idioma',
+    },
+    'fr': {
+        'home': 'Accueil',
+        'create_message': 'Creer Message',
+        'my_profile': 'Mon Profil',
+        'change_password': 'Changer Mot de Passe',
+        'logout': 'Deconnexion',
+        'delete_account': 'Supprimer Compte',
+        'create_user': 'Creer Utilisateur',
+        'login': 'Connexion',
+        'main_page': 'Page Principale',
+        'created_at': 'Cree',
+        'username': 'Utilisateur',
+        'age': 'Age',
+        'edited_at': 'Modifie',
+        'edit': 'Modifier',
+        'delete': 'Supprimer',
+        'reply': 'Repondre',
+        'previous': 'Precedent',
+        'next': 'Suivant',
+        'language': 'Langue',
+    },
+}
+
+def get_language(request: Request):
+    language = request.cookies.get('language', 'en')
+    if language not in TRANSLATIONS:
+        language = 'en'
+    return language
+
+def get_labels(request: Request):
+    return TRANSLATIONS[get_language(request)]
+
+templates.env.globals['get_labels'] = get_labels
+templates.env.globals['get_language'] = get_language
+
 def check_credentials(request: Request):
     '''
     Return username if user is logged in.
@@ -63,14 +141,32 @@ def get_user_id(username):
 def linkify_message(text):
     escaped_text = escape(text)
     url_pattern = r'(https?://[^\s]+)'
+    mention_pattern = r'(?<![\w/])@([A-Za-z0-9_]+)'
 
     linked_text = re.sub(
         url_pattern,
         r'<a href="\1">\1</a>',
         str(escaped_text)
     )
+    linked_text = re.sub(
+        mention_pattern,
+        r'<a href="/profile?username=\1">@\1</a>',
+        linked_text
+    )
 
     return Markup(linked_text)
+
+def build_message(row):
+    return {
+        'id': row[0],
+        'text': linkify_message(row[1]),
+        'timestamp': row[2],
+        'username': row[3],
+        'age': row[4],
+        'last_edited_at': row[5],
+        'image_url': 'https://robohash.org/' + quote(row[3]) + '?set=set1&size=80x80',
+        'replies': [],
+    }
 
 def get_offset(request: Request):
     offset = request.query_params.get('offset', '0')
@@ -91,28 +187,42 @@ async def index(request: Request):
 
     con = sqlite3.connect('twitter_clone.db')
     cur = con.cursor()
-    cur.execute('SELECT COUNT(*) FROM messages;')
+    cur.execute('SELECT COUNT(*) FROM messages WHERE parent_id IS NULL;')
     total_messages = cur.fetchone()[0]
 
     sql = """
     SELECT messages.id, messages.message, messages.created_at, users.username, users.age, messages.last_edited_at
     FROM messages
     JOIN users ON messages.sender_id = users.id
+    WHERE messages.parent_id IS NULL
     ORDER BY messages.created_at DESC
     LIMIT ? OFFSET ?;
     """
     cur.execute(sql, (MESSAGES_PER_PAGE, offset))
+    message_ids = []
     for row in cur.fetchall():
-        message = {
-            'id': row[0],
-            'text': linkify_message(row[1]),
-            'timestamp': row[2],
-            'username': row[3],
-            'age': row[4],
-            'last_edited_at': row[5],
-            'image_url': 'https://robohash.org/' + quote(row[3]) + '?set=set1&size=80x80',
-        }
+        message = build_message(row)
         messages.append(message)
+        message_ids.append(message['id'])
+
+    if message_ids:
+        placeholders = ','.join(['?'] * len(message_ids))
+        sql = f"""
+        SELECT messages.id, messages.message, messages.created_at, users.username, users.age, messages.last_edited_at, messages.parent_id
+        FROM messages
+        JOIN users ON messages.sender_id = users.id
+        WHERE messages.parent_id IN ({placeholders})
+        ORDER BY messages.created_at ASC;
+        """
+        cur.execute(sql, message_ids)
+        messages_by_id = {}
+        for message in messages:
+            messages_by_id[message['id']] = message
+        for row in cur.fetchall():
+            reply = build_message(row[:6])
+            parent_id = row[6]
+            if parent_id in messages_by_id:
+                messages_by_id[parent_id]['replies'].append(reply)
     con.close()
 
     # create response
@@ -334,6 +444,62 @@ async def edit_message(request: Request):
         },
     )
 
+@app.get('/reply_message', response_class=HTMLResponse)
+async def reply_message(request: Request):
+    username = check_credentials(request)
+    if username is None:
+        return RedirectResponse(url='/login', status_code=302)
+
+    parent_id = request.query_params.get('id')
+    reply_text = request.query_params.get('message')
+    error = None
+
+    con = sqlite3.connect('twitter_clone.db')
+    cur = con.cursor()
+    cur.execute(
+        '''
+        SELECT messages.id, messages.message, messages.created_at, users.username, users.age, messages.last_edited_at
+        FROM messages
+        JOIN users ON messages.sender_id = users.id
+        WHERE messages.id = ? AND messages.parent_id IS NULL;
+        ''',
+        (parent_id,)
+    )
+    parent_row = cur.fetchone()
+
+    if parent_row is None:
+        con.close()
+        return RedirectResponse(url='/', status_code=302)
+
+    if reply_text is not None:
+        if reply_text == '':
+            error = 'Reply cannot be blank.'
+        else:
+            user_id = get_user_id(username)
+            cur.execute(
+                '''
+                INSERT INTO messages (sender_id, message, parent_id)
+                VALUES (?, ?, ?);
+                ''',
+                (user_id, reply_text, parent_id)
+            )
+            con.commit()
+            con.close()
+            return RedirectResponse(url='/', status_code=302)
+
+    con.close()
+    return templates.TemplateResponse(
+        request=request,
+        name='reply_message.html',
+        context={
+            'is_logged_in': True,
+            'username': username,
+            'parent_message': build_message(parent_row),
+            'parent_id': parent_id,
+            'error': error,
+        },
+    )
+
 @app.get('/delete_user')
 async def delete_user(request: Request):
     username = check_credentials(request)
@@ -354,6 +520,16 @@ async def delete_user(request: Request):
     response = RedirectResponse(url='/', status_code=302)
     response.delete_cookie(key='username')
     response.delete_cookie(key='password')
+    return response
+
+@app.get('/set_language')
+async def set_language(request: Request):
+    language = request.query_params.get('language', 'en')
+    if language not in TRANSLATIONS:
+        language = 'en'
+
+    response = RedirectResponse(url='/', status_code=302)
+    response.set_cookie(key='language', value=language)
     return response
 
 @app.get('/change_password', response_class=HTMLResponse)
@@ -488,7 +664,7 @@ async def api_messages():
     cur = con.cursor()
     cur.execute(
         '''
-        SELECT messages.id, messages.message, messages.created_at, users.username, users.age
+        SELECT messages.id, messages.message, messages.created_at, users.username, users.age, messages.parent_id
         FROM messages
         JOIN users ON messages.sender_id = users.id
         ORDER BY messages.created_at DESC;
@@ -503,6 +679,7 @@ async def api_messages():
             'created_at': row[2],
             'username': row[3],
             'age': row[4],
+            'parent_id': row[5],
         })
 
     con.close()

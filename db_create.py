@@ -49,7 +49,8 @@ create table messages (
     sender_id integer not null,
     message text not null,
     created_at timestamp not null default current_timestamp,
-    last_edited_at timestamp
+    last_edited_at timestamp,
+    parent_id integer
     );
 '''
 cur.execute(sql)

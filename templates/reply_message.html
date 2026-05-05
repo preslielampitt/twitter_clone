@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% set labels = get_labels(request) %}
+<h2>{{ labels.reply }}</h2>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<div class="message">
+    <img class="avatar" src="{{ parent_message.image_url }}" alt="{{ parent_message.username }} avatar">
+    <p class="message-text">{{ parent_message.text }}</p>
+    <p class="message-info">{{ labels.created_at }}: {{ parent_message.timestamp }}</p>
+    <p class="message-info">{{ labels.username }}: {{ parent_message.username }}</p>
+</div>
+
+<form>
+    <input type="hidden" name="id" value="{{ parent_id }}">
+    <p>
+        <textarea name="message" rows="5" cols="60"></textarea>
+    </p>
+    <p>
+        <input type="submit" value="{{ labels.reply }}">
+    </p>
+</form>
+{% endblock %}
