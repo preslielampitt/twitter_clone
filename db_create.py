@@ -5,6 +5,7 @@ Create a database for the Twitter project.
 
 # sqlite3 is built in python3, no need to pip install
 import sqlite3
+import random
 
 # process command line arguments
 import argparse
@@ -51,38 +52,73 @@ create table messages (
 cur.execute(sql)
 con.commit()
 
-# insert some dummy data
-sql = '''
-insert into messages (sender_id,message,created_at) values
-    (1, 'I''m a baby', '2021-11-14 14:30:00'),
-    (2, 'I''m a baby', '2021-11-14 14:30:00'),
-    (3, 'I''m a baby', '2021-11-14 14:33:01'),
-    (4, 'I''m a baby', '2021-11-15 14:35:45');
-'''
-cur.execute(sql)
-con.commit()
+# insert random users and messages
+topics = [
+    'SQLite', 'FastAPI', 'Python', 'HTML', 'CSS',
+    'databases', 'web apps', 'cookies', 'templates', 'routes'
+]
 
-sql='''
-insert into messages (sender_id,message,created_at) values
-    (3, 'I''m actually a toddler', '2021-11-16 14:35:45');
-'''
-cur.execute(sql)
-con.commit()
+activities = [
+    'learning about', 'debugging', 'building', 'testing',
+    'reading about', 'experimenting with', 'improving'
+]
 
-sql='''
-insert into messages (sender_id,message,created_at) values
-    (6, 'Today in 1918, the Armistice that effectively ended WWI came into effect.', '2021-11-11 11:00:00');
-'''
-cur.execute(sql)
-con.commit()
+opinions = [
+    'is starting to make sense',
+    'is harder than I expected',
+    'is actually pretty fun',
+    'is useful for this project',
+    'works better after some practice',
+    'is something I want to understand better'
+]
 
-sql='''
-insert into messages (sender_id,message) values
-    (6, 'I''m an adult'),
-    (6, 'SQL is the best!!'),
-    (7, 'I''m an adult'),
-    (7, 'WTF is SQL?!  I thought you liked the snake thing.'),
-    (7, 'Mike said "SQL''s great!" today.');
-'''
-cur.execute(sql)
+websites = [
+    'https://www.python.org',
+    'https://fastapi.tiangolo.com',
+    'https://www.sqlite.org',
+    'https://developer.mozilla.org'
+]
+
+templates = [
+    'I spent some time {activity} {topic}, and it {opinion}.',
+    'Today I worked on {topic}. It {opinion}.',
+    'I found this helpful while learning {topic}: {website}',
+    'My current project uses {topic}, and it {opinion}.',
+    'I had a bug with {topic}, but it {opinion} now.',
+    'I am still {activity} {topic}, but it {opinion}.',
+    'This message has a single quote \' and a double quote " so I can test escaping.',
+]
+
+for user_number in range(200):
+    username = f'user{user_number}'
+    password = f'password{user_number}'
+    age = random.randint(13, 90)
+
+    cur.execute(
+        '''
+        INSERT INTO users (username, password, age)
+        VALUES (?, ?, ?);
+        ''',
+        (username, password, age)
+    )
+
+    user_id = cur.lastrowid
+
+    for message_number in range(200):
+        template = random.choice(templates)
+        message = template.format(
+            activity=random.choice(activities),
+            topic=random.choice(topics),
+            opinion=random.choice(opinions),
+            website=random.choice(websites),
+        )
+
+        cur.execute(
+            '''
+            INSERT INTO messages (sender_id, message)
+            VALUES (?, ?);
+            ''',
+            (user_id, message)
+        )
+
 con.commit()

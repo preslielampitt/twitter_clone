@@ -8,6 +8,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import sqlite3
+import re
+from markupsafe import Markup, escape
 
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
@@ -55,6 +57,18 @@ def get_user_id(username):
         return None
     return row[0]
 
+def linkify_message(text):
+    escaped_text = escape(text)
+    url_pattern = r'(https?://[^\s]+)'
+
+    linked_text = re.sub(
+        url_pattern,
+        r'<a href="\1">\1</a>',
+        str(escaped_text)
+    )
+
+    return Markup(linked_text)
+
 @app.get('/', response_class=HTMLResponse)
 async def index(request: Request):
     username = check_credentials(request)
@@ -71,7 +85,7 @@ async def index(request: Request):
     cur.execute(sql)
     for row in cur.fetchall():
         message = {
-            'text': row[0],
+            'text': linkify_message(row[0]),
             'timestamp': row[1],
             'username': row[2],
             'age': row[3],
