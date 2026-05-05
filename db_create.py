@@ -6,6 +6,7 @@ Create a database for the Twitter project.
 # sqlite3 is built in python3, no need to pip install
 import sqlite3
 import random
+from datetime import datetime, timedelta
 
 # process command line arguments
 import argparse
@@ -23,7 +24,8 @@ CREATE TABLE users (
     id INTEGER PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
-    age INTEGER
+    age INTEGER,
+    description TEXT DEFAULT ''
 );
 '''
 cur.execute(sql)     # cur.execute() actually runs the SQL code
@@ -90,6 +92,10 @@ templates = [
     'This message has a single quote \' and a double quote " so I can test escaping.',
 ]
 
+start_time = datetime(2024, 1, 1, 0, 0, 0)
+end_time = datetime.now()
+total_seconds = int((end_time - start_time).total_seconds())
+
 for user_number in range(200):
     username = f'user{user_number}'
     password = f'password{user_number}'
@@ -97,10 +103,10 @@ for user_number in range(200):
 
     cur.execute(
         '''
-        INSERT INTO users (username, password, age)
-        VALUES (?, ?, ?);
+        INSERT INTO users (username, password, age, description)
+        VALUES (?, ?, ?, ?);
         ''',
-        (username, password, age)
+        (username, password, age, f'I am {username}, and I like posting about web apps.')
     )
 
     user_id = cur.lastrowid
@@ -113,13 +119,15 @@ for user_number in range(200):
             opinion=random.choice(opinions),
             website=random.choice(websites),
         )
+        created_at = start_time + timedelta(seconds=random.randint(0, total_seconds))
+        created_at = created_at.strftime('%Y-%m-%d %H:%M:%S')
 
         cur.execute(
             '''
-            INSERT INTO messages (sender_id, message)
-            VALUES (?, ?);
+            INSERT INTO messages (sender_id, message, created_at)
+            VALUES (?, ?, ?);
             ''',
-            (user_id, message)
+            (user_id, message, created_at)
         )
 
 con.commit()

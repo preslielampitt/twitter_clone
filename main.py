@@ -15,6 +15,8 @@ from markupsafe import Markup, escape
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
 templates = Jinja2Templates(directory='templates')
+MESSAGES_PER_PAGE = 50
+PROFILE_MESSAGE_LIMIT = 10
 
 def check_credentials(request: Request):
     '''
@@ -70,20 +72,36 @@ def linkify_message(text):
 
     return Markup(linked_text)
 
+def get_offset(request: Request):
+    offset = request.query_params.get('offset', '0')
+    try:
+        offset = int(offset)
+    except ValueError:
+        offset = 0
+
+    if offset < 0:
+        offset = 0
+    return offset
+
 @app.get('/', response_class=HTMLResponse)
 async def index(request: Request):
     username = check_credentials(request)
     messages = []
+    offset = get_offset(request)
 
     con = sqlite3.connect('twitter_clone.db')
     cur = con.cursor()
+    cur.execute('SELECT COUNT(*) FROM messages;')
+    total_messages = cur.fetchone()[0]
+
     sql = """
     SELECT messages.id, messages.message, messages.created_at, users.username, users.age, messages.last_edited_at
     FROM messages
     JOIN users ON messages.sender_id = users.id
-    ORDER BY messages.created_at DESC;
+    ORDER BY messages.created_at DESC
+    LIMIT ? OFFSET ?;
     """
-    cur.execute(sql)
+    cur.execute(sql, (MESSAGES_PER_PAGE, offset))
     for row in cur.fetchall():
         message = {
             'id': row[0],
@@ -105,6 +123,10 @@ async def index(request: Request):
             'is_logged_in': username is not None,
             'username': username,
             'messages': messages,
+            'previous_offset': max(offset - MESSAGES_PER_PAGE, 0),
+            'next_offset': offset + MESSAGES_PER_PAGE,
+            'has_previous': offset > 0,
+            'has_next': offset + MESSAGES_PER_PAGE < total_messages,
         },
     )
 
@@ -378,6 +400,85 @@ async def change_password(request: Request):
             'is_logged_in': True,
             'username': username,
             'error': error,
+        },
+    )
+
+@app.get('/profile', response_class=HTMLResponse)
+async def profile(request: Request):
+    current_username = check_credentials(request)
+    profile_username = request.query_params.get('username')
+
+    if profile_username is None:
+        if current_username is None:
+            return RedirectResponse(url='/login', status_code=302)
+        profile_username = current_username
+
+    new_description = request.query_params.get('description')
+    error = None
+    success = None
+    is_owner = current_username == profile_username
+
+    con = sqlite3.connect('twitter_clone.db')
+    cur = con.cursor()
+
+    if new_description is not None:
+        if not is_owner:
+            error = 'You can only edit your own profile.'
+        else:
+            sql = """
+            UPDATE users
+            SET description = ?
+            WHERE username = ?;
+            """
+            cur.execute(sql, (new_description, profile_username))
+            con.commit()
+            success = 'Profile updated.'
+
+    sql = """
+    SELECT username, age, description
+    FROM users
+    WHERE username = ?;
+    """
+    cur.execute(sql, (profile_username,))
+    user_row = cur.fetchone()
+
+    if user_row is None:
+        con.close()
+        return RedirectResponse(url='/', status_code=302)
+
+    sql = """
+    SELECT id, message, created_at, last_edited_at
+    FROM messages
+    WHERE sender_id = ?
+    ORDER BY created_at DESC
+    LIMIT ?;
+    """
+    cur.execute(sql, (get_user_id(profile_username), PROFILE_MESSAGE_LIMIT))
+
+    recent_messages = []
+    for row in cur.fetchall():
+        recent_messages.append({
+            'id': row[0],
+            'text': linkify_message(row[1]),
+            'timestamp': row[2],
+            'last_edited_at': row[3],
+        })
+    con.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name='profile.html',
+        context={
+            'is_logged_in': current_username is not None,
+            'username': current_username,
+            'profile_username': user_row[0],
+            'profile_age': user_row[1],
+            'profile_description': user_row[2],
+            'profile_image_url': 'https://robohash.org/' + quote(user_row[0]) + '?set=set1&size=120x120',
+            'recent_messages': recent_messages,
+            'is_owner': is_owner,
+            'error': error,
+            'success': success,
         },
     )
 

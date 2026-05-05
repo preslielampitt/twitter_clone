@@ -10,7 +10,7 @@
     <img class="avatar" src="{{ message.image_url }}" alt="{{ message.username }} avatar">
     <p class="message-text">{{ message.text }}</p>
     <p class="message-info">Created at: {{ message.timestamp }}</p>
-    <p class="message-info">Username: {{ message.username }}</p>
+    <p class="message-info">Username: <a href="/profile?username={{ message.username | urlencode }}">{{ message.username }}</a></p>
     <p class="message-info">Age: {{ message.age }}</p>
     {% if message.last_edited_at %}
     <p class="message-info">Edited at: {{ message.last_edited_at }}</p>
@@ -21,4 +21,14 @@
     {% endif %}
 </div>
 {% endfor %}
+
+<div class="pagination">
+    {% if has_previous %}
+    <a href="/?offset={{ previous_offset }}">Previous</a>
+    {% endif %}
+
+    {% if has_next %}
+    <a href="/?offset={{ next_offset }}">Next</a>
+    {% endif %}
+</div>
 {% endblock %}

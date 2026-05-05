@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>{{ profile_username }}'s Profile</h2>
+
+<div class="profile">
+    <img class="profile-avatar" src="{{ profile_image_url }}" alt="{{ profile_username }} avatar">
+    <p class="message-info">Username: {{ profile_username }}</p>
+    <p class="message-info">Age: {{ profile_age }}</p>
+    <p>{{ profile_description }}</p>
+</div>
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+{% if success %}
+<p class="success">{{ success }}</p>
+{% endif %}
+
+{% if is_owner %}
+<h3>Edit Profile</h3>
+<form>
+    <input type="hidden" name="username" value="{{ profile_username }}">
+    <p>
+        <textarea name="description" rows="5" cols="60">{{ profile_description }}</textarea>
+    </p>
+    <p>
+        <input type="submit" value="Save Profile">
+    </p>
+</form>
+{% endif %}
+
+<h3>Recent Messages</h3>
+
+{% for message in recent_messages %}
+<div class="message">
+    <p class="message-text">{{ message.text }}</p>
+    <p class="message-info">Created at: {{ message.timestamp }}</p>
+    {% if message.last_edited_at %}
+    <p class="message-info">Edited at: {{ message.last_edited_at }}</p>
+    {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
