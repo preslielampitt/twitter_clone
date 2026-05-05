@@ -3,7 +3,7 @@ Starts a hello world webserver.
 '''
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -380,6 +380,32 @@ async def change_password(request: Request):
             'error': error,
         },
     )
+
+@app.get('/api/messages')
+async def api_messages():
+    con = sqlite3.connect('twitter_clone.db')
+    cur = con.cursor()
+    cur.execute(
+        '''
+        SELECT messages.id, messages.message, messages.created_at, users.username, users.age
+        FROM messages
+        JOIN users ON messages.sender_id = users.id
+        ORDER BY messages.created_at DESC;
+        '''
+    )
+
+    messages = []
+    for row in cur.fetchall():
+        messages.append({
+            'id': row[0],
+            'text': row[1],
+            'created_at': row[2],
+            'username': row[3],
+            'age': row[4],
+        })
+
+    con.close()
+    return JSONResponse(messages)
 
 if __name__ == '__main__':
     uvicorn.run("main:app", host='127.0.0.1', port=8080, reload=True)
