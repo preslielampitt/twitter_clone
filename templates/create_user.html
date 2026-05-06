@@ -7,12 +7,17 @@
 <p class="error">{{ error }}</p>
 {% endif %}
 
+<p class="help-text">
+    Username must be 3-30 characters and can only use letters, numbers, and underscores.
+    Password cannot be blank.
+</p>
+
 <form>
     <table>
-        <tr><td>username: </td><td><input name="username"></td></tr>
-        <tr><td>password: </td><td><input type="password" name="password"></td></tr>
-        <tr><td>password again: </td><td><input type="password" name="password_again"></td></tr>
-        <tr><td>age: </td><td><input type="number" name="age"></td></tr>
+        <tr><td>username: </td><td><input name="username" pattern="[A-Za-z0-9_]{3,30}" required title="Use 3-30 characters: letters, numbers, and underscores only."></td></tr>
+        <tr><td>password: </td><td><input type="password" name="password" required title="Password cannot be blank."></td></tr>
+        <tr><td>password again: </td><td><input type="password" name="password_again" required title="Type the same password again."></td></tr>
+        <tr><td>age: </td><td><input type="number" name="age" min="0" max="130"></td></tr>
         <tr><td></td><td><input type="submit" value="Create Account"></td></tr>
     </table>
 </form>

@@ -17,6 +17,7 @@ app.mount('/static', StaticFiles(directory='static'), name='static')
 templates = Jinja2Templates(directory='templates')
 MESSAGES_PER_PAGE = 50
 PROFILE_MESSAGE_LIMIT = 10
+USERNAME_PATTERN = re.compile(r'^[A-Za-z0-9_]{3,30}$')
 
 def check_credentials(request: Request):
     '''
@@ -99,6 +100,30 @@ def get_offset(request: Request):
     if offset < 0:
         offset = 0
     return offset
+
+def validate_new_account(username, password, password_again, age):
+    if username is None or password is None or password_again is None:
+        return None
+
+    if not USERNAME_PATTERN.fullmatch(username):
+        return 'Username must be 3-30 characters and use only letters, numbers, and underscores.'
+
+    if password == '':
+        return 'Password cannot be blank.'
+
+    if password != password_again:
+        return 'Passwords do not match.'
+
+    if age not in (None, ''):
+        try:
+            age_number = int(age)
+        except ValueError:
+            return 'Age must be a number.'
+
+        if age_number < 0 or age_number > 130:
+            return 'Age must be between 0 and 130.'
+
+    return None
 
 @app.get('/', response_class=HTMLResponse)
 async def index(request: Request):
@@ -260,9 +285,8 @@ async def create_user(request: Request):
     error = None
 
     if username is not None and password is not None and password_again is not None:
-        if password != password_again:
-            error = 'Passwords do not match.'
-        else:
+        error = validate_new_account(username, password, password_again, age)
+        if error is None:
             con = sqlite3.connect('twitter_clone.db')
             try:
                 cur = con.cursor()

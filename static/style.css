@@ -53,23 +53,44 @@ main {
     margin-bottom: 16px;
     padding: 18px;
     box-shadow: 0 4px 14px rgba(31, 41, 55, 0.08);
+    overflow-wrap: anywhere;
+}
+
+.message * {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .message-text {
+    display: block;
     font-size: 1.15rem;
     line-height: 1.5;
     margin: 0 0 12px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
 }
 
 .message-info {
     color: #5b677a;
     font-size: 0.95rem;
     margin: 4px 0;
+    overflow-wrap: anywhere;
 }
 
 .error {
     color: #b91c1c;
     font-weight: bold;
+}
+
+.help-text {
+    background: #eaf1ff;
+    border: 1px solid #bfd1f5;
+    border-radius: 8px;
+    color: #1f3b70;
+    max-width: 760px;
+    padding: 12px;
 }
 
 .success {
@@ -82,7 +103,9 @@ textarea {
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     font: inherit;
+    max-width: 100%;
     padding: 8px;
+    box-sizing: border-box;
 }
 
 input[type="submit"] {
@@ -109,6 +132,11 @@ img {
     max-width: 100%;
 }
 
+a {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 .avatar {
     width: 64px;
     height: 64px;
@@ -123,6 +151,7 @@ img {
     margin-bottom: 24px;
     padding: 18px;
     box-shadow: 0 4px 14px rgba(31, 41, 55, 0.08);
+    overflow-wrap: anywhere;
 }
 
 .profile-avatar {
