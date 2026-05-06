@@ -1,6 +1,12 @@
 # Twitter Clone
 
-Twitter Clone functions similarly to Twitter (now X). The home page displays messages, beginning with the newest, from different users with its timestamp, author, and the author's age.
+Twitter Clone functions similarly to Twitter (now X). The home page displays a feed of messages, beginning with the newest, and includes user avatars, age, and time the message was created.
+
+## Features
+
+- Create accounts, log in, log out, change passwords, and edit profile descriptions
+- Create, edit, delete, and reply to messages
+- View message data through a JSON endpoint
 
 ## How to Run
 
