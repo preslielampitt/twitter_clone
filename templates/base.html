@@ -1,5 +1,4 @@
 <html>
-    {% set labels = get_labels(request) %}
     <head>
         <link rel="stylesheet" href="/static/style.css">
         <title>Twitter Clone</title>
@@ -7,22 +6,15 @@
     <body>
         <h1>Twitter Clone</h1>
         <ul>
-            <li><a href='/'>{{ labels.home }}</a></li>
+            <li><a href='/'>Home</a></li>
             {% if is_logged_in %}
-            <li><a href='/create_message'>{{ labels.create_message }}</a></li>
-            <li><a href='/profile'>{{ labels.my_profile }}</a></li>
-            <li><a href='/change_password'>{{ labels.change_password }}</a></li>
-            <li><a href='/logout'>{{ labels.logout }}</a></li>
-            <li><a href='/delete_user' onclick="return confirm('Are you sure you want to delete this account?')">{{ labels.delete_account }}</a></li>
+            <li><a href='/profile'>My Profile</a></li>
+            <li><a href='/create_message'>Create Message</a></li>
+            <li><a href='/logout'>Logout</a></li>
             {% else %}
-            <li><a href='/create_user'>{{ labels.create_user }}</a></li>
-            <li><a href='/login'>{{ labels.login }}</a></li>
+            <li><a href='/create_user'>Create User</a></li>
+            <li><a href='/login'>Login</a></li>
             {% endif %}
-            <li>{{ labels.language }}:
-                <a href="/set_language?language=en">EN</a>
-                <a href="/set_language?language=es">ES</a>
-                <a href="/set_language?language=fr">FR</a>
-            </li>
         </ul>
         {# 
             this is a jinja2 comment

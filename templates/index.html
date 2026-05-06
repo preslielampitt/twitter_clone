@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% set labels = get_labels(request) %}
-<h2>{{ labels.main_page }}</h2>
+<h2>Main Page</h2>
 
 <img class="hero-image" src="/static/message_bubble.png" alt="Message Bubble">
 
@@ -10,32 +9,32 @@
 <div class="message">
     <img class="avatar" src="{{ message.image_url }}" alt="{{ message.username }} avatar">
     <p class="message-text">{{ message.text }}</p>
-    <p class="message-info">{{ labels.created_at }}: {{ message.timestamp }}</p>
-    <p class="message-info">{{ labels.username }}: <a href="/profile?username={{ message.username | urlencode }}">{{ message.username }}</a></p>
-    <p class="message-info">{{ labels.age }}: {{ message.age }}</p>
+    <p class="message-info">Created at: {{ message.timestamp }}</p>
+    <p class="message-info">Username: <a href="/profile?username={{ message.username | urlencode }}">{{ message.username }}</a></p>
+    <p class="message-info">Age: {{ message.age }}</p>
     {% if message.last_edited_at %}
-    <p class="message-info">{{ labels.edited_at }}: {{ message.last_edited_at }}</p>
+    <p class="message-info">Edited at: {{ message.last_edited_at }}</p>
     {% endif %}
     {% if is_logged_in %}
-    <a href="/reply_message?id={{ message.id }}">{{ labels.reply }}</a>
+    <a href="/reply_message?id={{ message.id }}">Reply</a>
     {% endif %}
     {% if is_logged_in and username == message.username %}
-    <a href="/edit_message?id={{ message.id }}">{{ labels.edit }}</a>
-    <a href="/delete_message?id={{ message.id }}" onclick="return confirm('Are you sure you want to delete this message?')">{{ labels.delete }}</a>
+    <a href="/edit_message?id={{ message.id }}">Edit</a>
+    <a href="/delete_message?id={{ message.id }}" onclick="return confirm('Are you sure you want to delete this message?')">Delete</a>
     {% endif %}
 
     {% for reply in message.replies %}
     <div class="reply">
         <img class="avatar" src="{{ reply.image_url }}" alt="{{ reply.username }} avatar">
         <p class="message-text">{{ reply.text }}</p>
-        <p class="message-info">{{ labels.created_at }}: {{ reply.timestamp }}</p>
-        <p class="message-info">{{ labels.username }}: <a href="/profile?username={{ reply.username | urlencode }}">{{ reply.username }}</a></p>
+        <p class="message-info">Created at: {{ reply.timestamp }}</p>
+        <p class="message-info">Username: <a href="/profile?username={{ reply.username | urlencode }}">{{ reply.username }}</a></p>
         {% if reply.last_edited_at %}
-        <p class="message-info">{{ labels.edited_at }}: {{ reply.last_edited_at }}</p>
+        <p class="message-info">Edited at: {{ reply.last_edited_at }}</p>
         {% endif %}
         {% if is_logged_in and username == reply.username %}
-        <a href="/edit_message?id={{ reply.id }}">{{ labels.edit }}</a>
-        <a href="/delete_message?id={{ reply.id }}" onclick="return confirm('Are you sure you want to delete this message?')">{{ labels.delete }}</a>
+        <a href="/edit_message?id={{ reply.id }}">Edit</a>
+        <a href="/delete_message?id={{ reply.id }}" onclick="return confirm('Are you sure you want to delete this message?')">Delete</a>
         {% endif %}
     </div>
     {% endfor %}
@@ -44,11 +43,11 @@
 
 <div class="pagination">
     {% if has_previous %}
-    <a href="/?offset={{ previous_offset }}">{{ labels.previous }}</a>
+    <a href="/?offset={{ previous_offset }}">Previous</a>
     {% endif %}
 
     {% if has_next %}
-    <a href="/?offset={{ next_offset }}">{{ labels.next }}</a>
+    <a href="/?offset={{ next_offset }}">Next</a>
     {% endif %}
 </div>
 {% endblock %}

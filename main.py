@@ -18,84 +18,6 @@ templates = Jinja2Templates(directory='templates')
 MESSAGES_PER_PAGE = 50
 PROFILE_MESSAGE_LIMIT = 10
 
-TRANSLATIONS = {
-    'en': {
-        'home': 'Home',
-        'create_message': 'Create Message',
-        'my_profile': 'My Profile',
-        'change_password': 'Change Password',
-        'logout': 'Logout',
-        'delete_account': 'Delete Account',
-        'create_user': 'Create User',
-        'login': 'Login',
-        'main_page': 'Main Page',
-        'created_at': 'Created at',
-        'username': 'Username',
-        'age': 'Age',
-        'edited_at': 'Edited at',
-        'edit': 'Edit',
-        'delete': 'Delete',
-        'reply': 'Reply',
-        'previous': 'Previous',
-        'next': 'Next',
-        'language': 'Language',
-    },
-    'es': {
-        'home': 'Inicio',
-        'create_message': 'Crear Mensaje',
-        'my_profile': 'Mi Perfil',
-        'change_password': 'Cambiar Contrasena',
-        'logout': 'Cerrar Sesion',
-        'delete_account': 'Borrar Cuenta',
-        'create_user': 'Crear Usuario',
-        'login': 'Iniciar Sesion',
-        'main_page': 'Pagina Principal',
-        'created_at': 'Creado',
-        'username': 'Usuario',
-        'age': 'Edad',
-        'edited_at': 'Editado',
-        'edit': 'Editar',
-        'delete': 'Borrar',
-        'reply': 'Responder',
-        'previous': 'Anterior',
-        'next': 'Siguiente',
-        'language': 'Idioma',
-    },
-    'fr': {
-        'home': 'Accueil',
-        'create_message': 'Creer Message',
-        'my_profile': 'Mon Profil',
-        'change_password': 'Changer Mot de Passe',
-        'logout': 'Deconnexion',
-        'delete_account': 'Supprimer Compte',
-        'create_user': 'Creer Utilisateur',
-        'login': 'Connexion',
-        'main_page': 'Page Principale',
-        'created_at': 'Cree',
-        'username': 'Utilisateur',
-        'age': 'Age',
-        'edited_at': 'Modifie',
-        'edit': 'Modifier',
-        'delete': 'Supprimer',
-        'reply': 'Repondre',
-        'previous': 'Precedent',
-        'next': 'Suivant',
-        'language': 'Langue',
-    },
-}
-
-def get_language(request: Request):
-    language = request.cookies.get('language', 'en')
-    if language not in TRANSLATIONS:
-        language = 'en'
-    return language
-
-def get_labels(request: Request):
-    return TRANSLATIONS[get_language(request)]
-
-templates.env.globals['get_labels'] = get_labels
-templates.env.globals['get_language'] = get_language
-
 def check_credentials(request: Request):
     '''
     Return username if user is logged in.
@@ -520,16 +442,6 @@ async def delete_user(request: Request):
     response = RedirectResponse(url='/', status_code=302)
     response.delete_cookie(key='username')
     response.delete_cookie(key='password')
-    return response
-
-@app.get('/set_language')
-async def set_language(request: Request):
-    language = request.query_params.get('language', 'en')
-    if language not in TRANSLATIONS:
-        language = 'en'
-
-    response = RedirectResponse(url='/', status_code=302)
-    response.set_cookie(key='language', value=language)
     return response
 
 @app.get('/change_password', response_class=HTMLResponse)
