@@ -62,19 +62,18 @@ def get_user_id(username):
 
 def linkify_message(text):
     escaped_text = escape(text)
-    url_pattern = r'(https?://[^\s]+)'
-    mention_pattern = r'(?<![\w/])@([A-Za-z0-9_]+)'
+    link_pattern = r'(https?://[^\s]+)|(?<![\w/])@([A-Za-z0-9_]+)'
 
-    linked_text = re.sub(
-        url_pattern,
-        r'<a href="\1">\1</a>',
-        str(escaped_text)
-    )
-    linked_text = re.sub(
-        mention_pattern,
-        r'<a href="/profile?username=\1">@\1</a>',
-        linked_text
-    )
+    def replace_link(match):
+        if match.group(1):
+            url = match.group(1)
+            return f'<a href="{url}">{url}</a>'
+
+        username = match.group(2)
+        profile_url = '/profile?username=' + quote(username)
+        return f'<a href="{profile_url}">@{username}</a>'
+
+    linked_text = re.sub(link_pattern, replace_link, str(escaped_text))
 
     return Markup(linked_text)
 
@@ -304,6 +303,17 @@ async def delete_message(request: Request):
 
     con = sqlite3.connect('twitter_clone.db')
     cur = con.cursor()
+    cur.execute(
+        '''
+        DELETE FROM messages
+        WHERE parent_id = ? AND ? = (
+            SELECT sender_id
+            FROM messages
+            WHERE id = ?
+        );
+        ''',
+        (message_id, user_id, message_id)
+    )
     cur.execute(
         '''
         DELETE FROM messages
